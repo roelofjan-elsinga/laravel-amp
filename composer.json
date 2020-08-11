@@ -1,0 +1,33 @@
+{
+  "name": "roelofjan-elsinga/laravel-amp",
+  "description": "An automated way of creating AMP versions of your Laravel websites.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Roelof Jan Elsinga",
+      "email": "roelofjanelsinga@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "illuminate/support": "^6.0|^7.0",
+    "illuminate/http": "^6.0|^7.0",
+    "paquettg/php-html-parser": "^3.0"
+  },
+  "require-dev": {
+    "illuminate/console": "^6.0|^7.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "LaravelAmp\\LaravelAmpServiceProvider"
+      ]
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "LaravelAmp\\": "src/"
+    }
+  }
+}
