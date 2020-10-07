@@ -3,7 +3,6 @@
 namespace LaravelAmp;
 
 use DOMDocument;
-use DOMNodeList;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -27,13 +26,17 @@ class AMP
     {
         return (new static($response))
             ->setAmpInHtml()
+            ->removeCustomJavaScript()
             ->setCharsetInHead()
             ->setScriptInHead()
             ->setCanonicalUrlInHead()
             ->setViewportInHead()
             ->setAmpBoilerplateInHead()
             ->removeDeferFromStylesheets()
+            ->cleanDivAttributes()
+            ->cleanButtonAttributes()
             ->setImageTags()
+            ->convertFormsToAmpForms()
             ->response();
     }
 
@@ -159,6 +162,37 @@ class AMP
         return $this;
     }
 
+    /**
+     * This method removes any custom JavaScript from the HTML.
+     *
+     * There is a double loop in here, because removing the nodes directly causes errors.
+     *
+     * @return AMP
+     */
+    private function removeCustomJavaScript(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('script');
+
+        $whitelisted_script_types = ['application/ld+json'];
+
+        $removable_scripts = [];
+
+        foreach ($tags as $node) {
+            $has_blocked_type = $node->hasAttribute('type')
+                && !in_array($node->getAttribute('type'), $whitelisted_script_types);
+
+            if (!$node->hasAttribute('type') || $has_blocked_type) {
+                $removable_scripts[] = $node;
+            }
+        }
+
+        foreach ($removable_scripts as $node) {
+            $node->parentNode->removeChild($node);
+        }
+
+        return $this;
+    }
+
     private function removeDeferFromStylesheets(): AMP
     {
         $tags = $this->document->getElementsByTagName('link');
@@ -168,6 +202,28 @@ class AMP
                 $node->removeAttribute('defer');
             }
         }
+
+        return $this;
+    }
+
+    private function cleanDivAttributes(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('div');
+
+        $allowed_attributes = ['class', 'id', 'style'];
+
+        $this->removeBlockedAttributesFromNodes($tags, $allowed_attributes);
+
+        return $this;
+    }
+
+    private function cleanButtonAttributes(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('button');
+
+        $allowed_attributes = ['class', 'id', 'style', 'type'];
+
+        $this->removeBlockedAttributesFromNodes($tags, $allowed_attributes);
 
         return $this;
     }
@@ -204,5 +260,55 @@ class AMP
         }
 
         return $this;
+    }
+
+    /**
+     * @param \DOMNodeList $tags
+     * @param array $allowed_attributes
+     */
+    private function removeBlockedAttributesFromNodes(\DOMNodeList $tags, array $allowed_attributes): void
+    {
+        foreach ($tags as $node) {
+
+            $attributes = [];
+
+            for ($i = 0; $i < $node->attributes->length; $i++) {
+                if (!in_array($node->attributes->item($i)->nodeName, $allowed_attributes)) {
+                    $attributes[] = $node->attributes->item($i)->nodeName;
+                }
+            }
+
+            foreach ($attributes as $attribute) {
+                $node->removeAttribute($attribute);
+            }
+        }
+    }
+
+    private function convertFormsToAmpForms(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('form');
+
+        if ($tags->length > 0) {
+            $this->setAmpFormImport();
+        }
+
+        foreach ($tags as $form) {
+            $form->setAttribute('action-xhr', $form->getAttribute('action'));
+            $form->removeAttribute('action');
+        }
+
+        return $this;
+    }
+
+    private function setAmpFormImport()
+    {
+        $tags = $this->document->getElementsByTagName('head');
+
+        $script = $this->document->createElement('script');
+        $script->appendChild($this->document->createAttribute('async'));
+        $script->setAttribute('custom-element', 'amp-form');
+        $script->setAttribute('src', 'https://cdn.ampproject.org/v0/amp-form-0.1.js');
+
+        $tags->item(0)->appendChild($script);
     }
 }
