@@ -11,6 +11,8 @@
   ],
   "require": {
     "php": ">=7.4",
+    "ext-dom": "*",
+    "ext-libxml": "*",
     "illuminate/support": "^6.0|^7.0",
     "illuminate/http": "^6.0|^7.0",
     "paquettg/php-html-parser": "^3.0"
