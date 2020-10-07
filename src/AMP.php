@@ -3,7 +3,6 @@
 namespace LaravelAmp;
 
 use DOMDocument;
-use DOMNodeList;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
