@@ -257,4 +257,54 @@ class AMP
 
         return $this;
     }
+
+    /**
+     * @param \DOMNodeList $tags
+     * @param array $allowed_attributes
+     */
+    private function removeBlockedAttributesFromNodes(\DOMNodeList $tags, array $allowed_attributes): void
+    {
+        foreach ($tags as $node) {
+
+            $attributes = [];
+
+            for ($i = 0; $i < $node->attributes->length; $i++) {
+                if (!in_array($node->attributes->item($i)->nodeName, $allowed_attributes)) {
+                    $attributes[] = $node->attributes->item($i)->nodeName;
+                }
+            }
+
+            foreach ($attributes as $attribute) {
+                $node->removeAttribute($attribute);
+            }
+        }
+    }
+
+    private function convertFormsToAmpForms(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('form');
+
+        if ($tags->length > 0) {
+            $this->setAmpFormImport();
+        }
+
+        foreach ($tags as $form) {
+            $form->setAttribute('action-xhr', $form->getAttribute('action'));
+            $form->removeAttribute('action');
+        }
+
+        return $this;
+    }
+
+    private function setAmpFormImport()
+    {
+        $tags = $this->document->getElementsByTagName('head');
+
+        $script = $this->document->createElement('script');
+        $script->appendChild($this->document->createAttribute('async'));
+        $script->setAttribute('custom-element', 'amp-form');
+        $script->setAttribute('src', 'https://cdn.ampproject.org/v0/amp-form-0.1.js');
+
+        $tags->item(0)->appendChild($script);
+    }
 }
