@@ -26,13 +26,17 @@ class AMP
     {
         return (new static($response))
             ->setAmpInHtml()
+            ->removeCustomJavaScript()
             ->setCharsetInHead()
             ->setScriptInHead()
             ->setCanonicalUrlInHead()
             ->setViewportInHead()
             ->setAmpBoilerplateInHead()
             ->removeDeferFromStylesheets()
+            ->cleanDivAttributes()
+            ->cleanButtonAttributes()
             ->setImageTags()
+            ->convertFormsToAmpForms()
             ->response();
     }
 
