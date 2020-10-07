@@ -1,8 +1,9 @@
 <?php
 
-namespace LaravelAmp\Amp;
+namespace LaravelAmp;
 
 use DOMDocument;
+use DOMNodeList;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -15,7 +16,7 @@ class AMP
     {
         $this->response = $response;
 
-        $document = new DOMDocument();
+        $document = new DOMDocument( '1.0', 'utf-8');
 
         $document->loadHTML($this->response->content(), LIBXML_NOERROR);
 
@@ -31,6 +32,8 @@ class AMP
             ->setCanonicalUrlInHead()
             ->setViewportInHead()
             ->setAmpBoilerplateInHead()
+            ->removeDeferFromStylesheets()
+            ->setImageTags()
             ->response();
     }
 
@@ -152,6 +155,53 @@ class AMP
 
         $tags->item(0)->appendChild($style);
         $tags->item(0)->appendChild($noscript);
+
+        return $this;
+    }
+
+    private function removeDeferFromStylesheets(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('link');
+
+        foreach ($tags as $node) {
+            if ($node->hasAttribute('rel') && $node->getAttribute('rel') === 'stylesheet') {
+                $node->removeAttribute('defer');
+            }
+        }
+
+        return $this;
+    }
+
+    private function setImageTags(): AMP
+    {
+        $blocked_attributes = ['loading'];
+
+        $tags = $this->document->getElementsByTagName('img');
+
+        while ($tags->length) {
+            $img = $tags->item(0);
+
+            $amp_img = $this->document->createElement('amp-img');
+
+            foreach ($img->attributes as $attr) {
+                if (!in_array($attr->nodeName, $blocked_attributes)) {
+                    $attrName = $attr->nodeName;
+                    $attrValue = $attr->nodeValue;
+                    $amp_img->setAttribute($attrName, $attrValue);
+                }
+            }
+
+            $amp_img->setAttribute('layout', 'responsive');
+
+            $image_size = getimagesize($amp_img->getAttribute('src'));
+
+            if ($image_size !== false) {
+               $amp_img->setAttribute('width', $image_size[0]);
+               $amp_img->setAttribute('height', $image_size[1]);
+            }
+
+            $img->parentNode->replaceChild($amp_img, $img);
+        }
 
         return $this;
     }
