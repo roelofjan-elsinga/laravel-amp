@@ -202,6 +202,28 @@ class AMP
         return $this;
     }
 
+    private function cleanDivAttributes(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('div');
+
+        $allowed_attributes = ['class', 'id', 'style'];
+
+        $this->removeBlockedAttributesFromNodes($tags, $allowed_attributes);
+
+        return $this;
+    }
+
+    private function cleanButtonAttributes(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('button');
+
+        $allowed_attributes = ['class', 'id', 'style', 'type'];
+
+        $this->removeBlockedAttributesFromNodes($tags, $allowed_attributes);
+
+        return $this;
+    }
+
     private function setImageTags(): AMP
     {
         $blocked_attributes = ['loading'];
