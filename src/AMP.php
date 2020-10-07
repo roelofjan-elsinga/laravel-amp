@@ -158,6 +158,37 @@ class AMP
         return $this;
     }
 
+    /**
+     * This method removes any custom JavaScript from the HTML.
+     *
+     * There is a double loop in here, because removing the nodes directly causes errors.
+     *
+     * @return AMP
+     */
+    private function removeCustomJavaScript(): AMP
+    {
+        $tags = $this->document->getElementsByTagName('script');
+
+        $whitelisted_script_types = ['application/ld+json'];
+
+        $removable_scripts = [];
+
+        foreach ($tags as $node) {
+            $has_blocked_type = $node->hasAttribute('type')
+                && !in_array($node->getAttribute('type'), $whitelisted_script_types);
+
+            if (!$node->hasAttribute('type') || $has_blocked_type) {
+                $removable_scripts[] = $node;
+            }
+        }
+
+        foreach ($removable_scripts as $node) {
+            $node->parentNode->removeChild($node);
+        }
+
+        return $this;
+    }
+
     private function removeDeferFromStylesheets(): AMP
     {
         $tags = $this->document->getElementsByTagName('link');
